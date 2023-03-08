@@ -1,0 +1,44 @@
+version: "3"
+services:
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6380:6379"
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: authDB
+      NODE_ENV: docker
+    ports:
+      - "5433:5432"
+
+  migration:
+    build: 
+      context: ../auth
+      dockerfile: Dockerfile.migrations
+    command: npx sequelize-cli db:migrate
+    environment:
+      NODE_ENV: docker
+    depends_on:
+      - db
+      - redis
+    
+  auth-service:
+    build: ../auth
+    restart: always
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      # NUMBER_OF_SALTS_ROUNDS: 10
+      SECRET_KEY: 3e89f3nufninvncivew8ru88
+      NODE_ENV: docker
+      REDIS_HOST: docker.for.mac.localhost
